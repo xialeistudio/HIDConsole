@@ -52,11 +52,13 @@ jobs:
 
       - name: Update version in package.json
         run: |
-          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"${{ steps.version.outputs.version }}\"/" package.json
+          VERSION=${{ steps.version.outputs.version }}
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/g" package.json
 
       - name: Update version in Cargo.toml
         run: |
-          sed -i "s/^version = \"[^\"]*\"/version = \"${{ steps.version.outputs.version }}\"/" src-tauri/Cargo.toml
+          VERSION=${{ steps.version.outputs.version }}
+          sed -i "s/^version = \"[^\"]*\"/version = \"$VERSION\"/g" src-tauri/Cargo.toml
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
