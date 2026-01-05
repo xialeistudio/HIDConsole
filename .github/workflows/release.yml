@@ -92,7 +92,7 @@ jobs:
 
       - name: Get artifact path (Windows)
         if: runner.os == 'Windows'
-        id: artifact-win
+        id: artifact
         shell: pwsh
         run: |
           Write-Host "Checking bundle directory..."
