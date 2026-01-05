@@ -90,18 +90,30 @@ jobs:
         id: artifact
         run: |
           find src-tauri/target/release/bundle -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.dmg" -o -name "*.app.tar.gz" \) | head -1 > artifact_path.txt
-          echo "path=$(cat artifact_path.txt)" >> $GITHUB_OUTPUT
-          echo "name=HIDConsole_${{ matrix.platform.os-name }}.$(cat artifact_path.txt | rev | cut -d. -f1 | rev)" >> $GITHUB_OUTPUT
+          cat artifact_path.txt
+          path=$(cat artifact_path.txt)
+          ext="${path##*.}"
+          echo "path=$path" >> $GITHUB_OUTPUT
+          echo "name=HIDConsole_${{ matrix.platform.os-name }}.$ext" >> $GITHUB_OUTPUT
 
       - name: Get artifact path (Windows)
         if: runner.os == 'Windows'
-        id: artifact-win
+        id: artifact
         shell: pwsh
         run: |
-          $path = Get-ChildItem -Path "src-tauri/target/release" -Recurse -Include *.exe, *.msi -File | Select-Object -First 1 -ExpandProperty FullName
-          $ext = [System.IO.Path]::GetExtension($path)
-          Write-Output "path=$path" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          Write-Output "name=HIDConsole_${{ matrix.platform.os-name }}$ext" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          $files = Get-ChildItem -Path "src-tauri/target/release" -Recurse -Include *.exe, *.msi -File
+          Write-Host "Found files: $($files | Format-Table | Out-String)"
+          if ($files) {
+            $path = $files[0].FullName
+            $ext = [System.IO.Path]::GetExtension($path)
+            Write-Host "Path: $path"
+            Write-Host "Extension: $ext"
+            Write-Output "path=$path" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            Write-Output "name=HIDConsole_${{ matrix.platform.os-name }}$ext" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          } else {
+            Write-Error "No artifacts found!"
+            exit 1
+          }
 
       - name: Rename artifact
         run: |
