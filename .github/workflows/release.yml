@@ -81,7 +81,11 @@ jobs:
 
       - name: Get artifact path
         id: artifact
-        run: echo "path=${{ steps.build.outputs.dist }}" >> $GITHUB_OUTPUT
+        run: |
+          if [ -d "src-tauri/target/release/bundle" ]; then
+            find src-tauri/target/release/bundle -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.dmg" -o -name "*.app.tar.gz" \) | head -1 > artifact_path.txt
+          fi
+          echo "path=$(cat artifact_path.txt)" >> $GITHUB_OUTPUT
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -94,7 +98,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/v')
         with:
-          files: |
-            ${{ steps.artifact.outputs.path }}/*
+          files: ${{ steps.artifact.outputs.path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
