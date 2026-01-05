@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   release:
     strategy:
@@ -79,13 +82,20 @@ jobs:
           distName: ${{ matrix.platform.artifact }}
           releaseName: "HIDConsole ${{ matrix.platform.artifact }}"
 
-      - name: Get artifact path
+      - name: Get artifact path (Linux/macOS)
+        if: runner.os != 'Windows'
         id: artifact
         run: |
-          if [ -d "src-tauri/target/release/bundle" ]; then
-            find src-tauri/target/release/bundle -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.dmg" -o -name "*.app.tar.gz" \) | head -1 > artifact_path.txt
-          fi
+          find src-tauri/target/release/bundle -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.dmg" -o -name "*.app.tar.gz" \) | head -1 > artifact_path.txt
           echo "path=$(cat artifact_path.txt)" >> $GITHUB_OUTPUT
+
+      - name: Get artifact path (Windows)
+        if: runner.os == 'Windows'
+        id: artifact-win
+        shell: pwsh
+        run: |
+          $path = Get-ChildItem -Path "src-tauri/target/release/bundle" -Recurse -File -Include *.exe, *.msi | Select-Object -First 1 | ForEach-Object { $_.FullName }
+          Write-Output "path=$path" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
