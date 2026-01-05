@@ -17,15 +17,19 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             artifact: "HIDConsole-x64-windows"
+            os-name: "Windows-x64"
           - target: i686-pc-windows-msvc
             os: windows-latest
             artifact: "HIDConsole-x86-windows"
+            os-name: "Windows-x86"
           - target: x86_64-apple-darwin
             os: macos-latest
             artifact: "HIDConsole-x64-macos"
+            os-name: "macOS-x64"
           - target: aarch64-apple-darwin
             os: macos-latest
             artifact: "HIDConsole-arm64-macos"
+            os-name: "macOS-arm64"
 
     runs-on: ${{ matrix.platform.os }}
     steps:
@@ -80,7 +84,6 @@ jobs:
           actionName: build
           target: ${{ matrix.platform.target }}
           distName: ${{ matrix.platform.artifact }}
-          releaseName: "HIDConsole ${{ matrix.platform.artifact }}"
 
       - name: Get artifact path (Linux/macOS)
         if: runner.os != 'Windows'
@@ -88,30 +91,47 @@ jobs:
         run: |
           find src-tauri/target/release/bundle -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.dmg" -o -name "*.app.tar.gz" \) | head -1 > artifact_path.txt
           echo "path=$(cat artifact_path.txt)" >> $GITHUB_OUTPUT
-          cat artifact_path.txt
+          echo "name=HIDConsole_${{ matrix.platform.os-name }}.$(cat artifact_path.txt | rev | cut -d. -f1 | rev)" >> $GITHUB_OUTPUT
 
       - name: Get artifact path (Windows)
         if: runner.os == 'Windows'
-        id: artifact
+        id: artifact-win
         shell: pwsh
         run: |
-          Write-Host "Checking bundle directory..."
-          Get-ChildItem -Path "src-tauri/target/release" -Recurse -Include *.exe, *.msi -File | Format-Table FullName
           $path = Get-ChildItem -Path "src-tauri/target/release" -Recurse -Include *.exe, *.msi -File | Select-Object -First 1 -ExpandProperty FullName
-          Write-Host "Found: $path"
+          $ext = [System.IO.Path]::GetExtension($path)
           Write-Output "path=$path" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Write-Output "name=HIDConsole_${{ matrix.platform.os-name }}$ext" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Rename artifact
+        run: |
+          mv "${{ steps.artifact.outputs.path }}" "${{ steps.artifact.outputs.name }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform.artifact }}
-          path: ${{ steps.artifact.outputs.path }}
+          path: ${{ steps.artifact.outputs.name }}
           if-no-files-found: error
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/v')
         with:
-          files: ${{ steps.artifact.outputs.path }}
+          files: ${{ steps.artifact.outputs.name }}
+          name: "HIDConsole ${{ github.ref_name }}"
+          body: |
+            ## Downloads
+
+            | Platform | File |
+            |----------|------|
+            | Windows x64 | [HIDConsole_Windows-x64.exe](HIDConsole_Windows-x64.exe) |
+            | Windows x86 | [HIDConsole_Windows-x86.exe](HIDConsole_Windows-x86.exe) |
+            | macOS x64 | [HIDConsole_macOS-x64.app.tar.gz](HIDConsole_macOS-x64.app.tar.gz) |
+            | macOS arm64 | [HIDConsole_macOS-arm64.app.tar.gz](HIDConsole_macOS-arm64.app.tar.gz) |
+
+            ## Changelog
+
+            See [CHANGELOG.md](https://github.com/xialeistudio/HIDConsole/blob/main/CHANGELOG.md) for details.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
