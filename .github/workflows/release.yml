@@ -68,6 +68,10 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           version: 9
+          dest: ~/.local
+
+      - name: Add pnpm to PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
         run: pnpm install
