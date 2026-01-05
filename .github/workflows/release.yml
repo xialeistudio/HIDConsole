@@ -96,7 +96,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform.artifact }}
-          path: ${{ steps.build.outputs.outputs }}
+          path: ${{ steps.build.outputs.dist }}
           if-no-files-found: error
 
       - name: Create Release
