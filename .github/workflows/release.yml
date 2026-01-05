@@ -85,6 +85,16 @@ jobs:
           toolchain: stable
           target: ${{ matrix.platform.target }}
 
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo
+            src-tauri/target
+          key: ${{ matrix.platform.target }}-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.platform.target }}-cargo-
+
       - name: Install dependencies (Linux)
         if: matrix.platform.os == 'ubuntu-latest'
         run: |
