@@ -62,7 +62,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: pnpm
 
       - name: Enable corepack and pnpm
         run: |
@@ -71,6 +70,14 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
+
+      - name: Cache pnpm modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
